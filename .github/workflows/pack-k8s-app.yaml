@@ -31,7 +31,7 @@ jobs:
           if [[ "$TAG" == *-pre ]]; then
             CHANNEL="Staging"
           elif [[ "$TAG" == *-* ]]; then
-            CHANNEL="Dev"
+            CHANNEL="Demo"
           else
             CHANNEL="Prod"
           fi
