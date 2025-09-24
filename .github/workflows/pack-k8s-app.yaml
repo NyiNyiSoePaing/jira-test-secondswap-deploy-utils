@@ -87,7 +87,7 @@ jobs:
         env: 
           OCTOPUS_URL: https://emurgo.octopus.app
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SPACE: 'DevOps'
+          OCTOPUS_SPACE: 'SecondSwap'
         with:
           packages: '${{ env.PACKAGE_NAME }}'
 
