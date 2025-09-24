@@ -1,0 +1,104 @@
+name: A
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        required: true
+        type: string
+      octopus-project:
+        required: true
+        type: string
+      octopus-channel:
+        required: true
+        type: string
+        
+    secrets:
+      OCTOPUS_API_KEY:
+        required: true
+      GH_ACCESS_TOKEN:
+        required: true
+
+jobs:
+  determine-channel:
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.set-channel.outputs.channel }}
+    steps:
+      - name: Determine channel based on tag suffix
+        id: set-channel
+        run: |
+          TAG="${{ inputs.octopus-channel }}"
+          if [[ "$TAG" == *-pre ]]; then
+            CHANNEL="Staging"
+          elif [[ "$TAG" == *-* ]]; then
+            CHANNEL="Dev"
+          else
+            CHANNEL="Prod"
+          fi
+          echo "CHANNEL=$CHANNEL"
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
+
+  pack-k8s-app:
+    needs: determine-channel
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 22.x ]
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+
+      - name: Checkout emurgo-deploy-utils
+        uses: actions/checkout@v3
+        with:
+          repository: Emurgo/emurgo-deploy-utils
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          path: emurgo-deploy-utils
+          ref: main
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Set package name 📦
+        run: echo "PACKAGE_NAME=$(echo ${{ inputs.app-name }}.${{ github.ref_name }}.zip)" >> $GITHUB_ENV
+
+      - name: Copy k8s dir
+        run: cp -r _k8s/ __k8s__/
+
+      - name: Replace values
+        run: node ${{ github.workspace }}/emurgo-deploy-utils/set-custom-vars.cjs ${{ inputs.app-name }} ${{ github.ref_name }} ${{ github.workspace }}
+
+      - name: Zip package 📦
+        run: cd ./__k8s__/${{ inputs.app-name }} && zip -r ../../$(echo $PACKAGE_NAME) .
+        
+      - name: Install Octopus CLI 🐙
+        uses: OctopusDeploy/install-octopus-cli-action@v3
+        with:
+          version: latest
+
+      - name: Push package to Octopus Deploy 🐙
+        uses: OctopusDeploy/push-package-action@v3
+        env: 
+          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_SPACE: 'DevOps'
+        with:
+          packages: '${{ env.PACKAGE_NAME }}'
+
+      - name: Create release 
+        uses: OctopusDeploy/create-release-action@v3
+        env: 
+          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_SPACE: 'DevOps'
+        with:
+          project: ${{ inputs.octopus-project }}
+          channel: ${{ needs.determine-channel.outputs.channel }}
+          packages: '${{ inputs.app-name }}:${{ github.ref_name }}'
+          release_number: '${{ github.ref_name }}'
