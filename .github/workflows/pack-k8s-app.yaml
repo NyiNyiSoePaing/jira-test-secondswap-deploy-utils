@@ -94,7 +94,7 @@ jobs:
       - name: Create release 
         uses: OctopusDeploy/create-release-action@v3
         env: 
-          OCTOPUS_URL: https://secondswap.octopus.app
+          OCTOPUS_URL: https://emurgo.octopus.app
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
           OCTOPUS_SPACE: 'SecondSwap'
         with:
