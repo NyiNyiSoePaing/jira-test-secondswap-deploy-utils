@@ -52,12 +52,12 @@ jobs:
           submodules: 'true'
           token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Checkout emurgo-deploy-utils
+      - name: Checkout secondswap-deploy-utils
         uses: actions/checkout@v3
         with:
-          repository: Emurgo/emurgo-deploy-utils
+          repository: secondswap/secondswap-deploy-utils
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: emurgo-deploy-utils
+          path: secondswap-deploy-utils
           ref: main
 
       - name: Use Node.js ${{ matrix.node-version }}
@@ -72,7 +72,7 @@ jobs:
         run: cp -r _k8s/ __k8s__/
 
       - name: Replace values
-        run: node ${{ github.workspace }}/emurgo-deploy-utils/set-custom-vars.cjs ${{ inputs.app-name }} ${{ github.ref_name }} ${{ github.workspace }}
+        run: node ${{ github.workspace }}/secondswap-deploy-utils/set-custom-vars.cjs ${{ inputs.app-name }} ${{ github.ref_name }} ${{ github.workspace }}
 
       - name: Zip package 📦
         run: cd ./__k8s__/${{ inputs.app-name }} && zip -r ../../$(echo $PACKAGE_NAME) .
@@ -85,7 +85,7 @@ jobs:
       - name: Push package to Octopus Deploy 🐙
         uses: OctopusDeploy/push-package-action@v3
         env: 
-          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_URL: https://secondswap.octopus.app
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
           OCTOPUS_SPACE: 'SecondSwap'
         with:
@@ -94,7 +94,7 @@ jobs:
       - name: Create release 
         uses: OctopusDeploy/create-release-action@v3
         env: 
-          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_URL: https://secondswap.octopus.app
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
           OCTOPUS_SPACE: 'SecondSwap'
         with:
