@@ -33,7 +33,7 @@ jobs:
           elif [[ "$TAG" == *-* ]]; then
             CHANNEL="Demo"
           else
-            CHANNEL="Prod"
+            CHANNEL="Production"
           fi
           echo "CHANNEL=$CHANNEL"
           echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
