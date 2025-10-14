@@ -11,7 +11,7 @@ on:
       octopus-channel:
         required: true
         type: string
-        
+
     secrets:
       OCTOPUS_API_KEY:
         required: true
@@ -28,9 +28,12 @@ jobs:
         id: set-channel
         run: |
           TAG="${{ inputs.octopus-channel }}"
-          if [[ "$TAG" == *-pre ]]; then
+          TAG="${TAG,,}"
+          TAG="$(echo -n "$TAG" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+
+          if [[ "$TAG" =~ -pre(\.[0-9]+)?$ ]]; then
             CHANNEL="Staging"
-          elif [[ "$TAG" == *-* ]]; then
+          elif [[ "$TAG" =~ - ]]; then
             CHANNEL="Demo"
           else
             CHANNEL="Production"
@@ -76,7 +79,7 @@ jobs:
 
       - name: Zip package 📦
         run: cd ./__k8s__/${{ inputs.app-name }} && zip -r ../../$(echo $PACKAGE_NAME) .
-        
+
       - name: Install Octopus CLI 🐙
         uses: OctopusDeploy/install-octopus-cli-action@v3
         with:
@@ -84,16 +87,16 @@ jobs:
 
       - name: Push package to Octopus Deploy 🐙
         uses: OctopusDeploy/push-package-action@v3
-        env: 
+        env:
           OCTOPUS_URL: https://emurgo.octopus.app
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
           OCTOPUS_SPACE: 'SecondSwap'
         with:
           packages: '${{ env.PACKAGE_NAME }}'
 
-      - name: Create release 
+      - name: Create release
         uses: OctopusDeploy/create-release-action@v3
-        env: 
+        env:
           OCTOPUS_URL: https://emurgo.octopus.app
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
           OCTOPUS_SPACE: 'SecondSwap'
