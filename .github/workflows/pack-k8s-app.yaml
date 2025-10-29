@@ -33,8 +33,10 @@ jobs:
 
           if [[ "$TAG" =~ -pre(\.[0-9]+)?$ ]]; then
             CHANNEL="Staging"
-          elif [[ "$TAG" =~ - ]]; then
+          elif [[ "$TAG" =~ -demo(\.[0-9]+)?$ ]]; then
             CHANNEL="Demo"
+          elif [[ "$TAG" =~ - ]]; then
+            CHANNEL="Dev"
           else
             CHANNEL="Production"
           fi
