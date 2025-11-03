@@ -19,32 +19,7 @@ on:
         required: true
 
 jobs:
-  determine-channel:
-    runs-on: ubuntu-latest
-    outputs:
-      channel: ${{ steps.set-channel.outputs.channel }}
-    steps:
-      - name: Determine channel based on tag suffix
-        id: set-channel
-        run: |
-          TAG="${{ inputs.octopus-channel }}"
-          TAG="${TAG,,}"
-          TAG="$(echo -n "$TAG" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-
-          if [[ "$TAG" =~ -pre(\.[0-9]+)?$ ]]; then
-            CHANNEL="Staging"
-          elif [[ "$TAG" =~ -demo(\.[0-9]+)?$ ]]; then
-            CHANNEL="Demo"
-          elif [[ "$TAG" =~ - ]]; then
-            CHANNEL="Dev"
-          else
-            CHANNEL="Production"
-          fi
-          echo "CHANNEL=$CHANNEL"
-          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
-
   pack-k8s-app:
-    needs: determine-channel
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -104,6 +79,6 @@ jobs:
           OCTOPUS_SPACE: 'SecondSwap'
         with:
           project: ${{ inputs.octopus-project }}
-          channel: ${{ needs.determine-channel.outputs.channel }}
+          channel: 'Default'
           packages: '${{ inputs.app-name }}:${{ github.ref_name }}'
           release_number: '${{ github.ref_name }}'
