@@ -78,7 +78,7 @@ jobs:
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
           OCTOPUS_SPACE: 'SecondSwap'
         with:
-          packages: '${{ inputs.app-name }}:${{ github.ref_name }}'
+          packages: '${{ inputs.app-name }}'
           version: '${{ github.ref_name }}'
 
       - name: Create release
