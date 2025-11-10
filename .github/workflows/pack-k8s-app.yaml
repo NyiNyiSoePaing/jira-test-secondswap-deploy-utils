@@ -70,6 +70,17 @@ jobs:
           OCTOPUS_SPACE: 'SecondSwap'
         with:
           packages: '${{ env.PACKAGE_NAME }}'
+          
+      - name: Push build information to Octopus Deploy 🐙
+        uses: OctopusDeploy/push-build-information-action@v3
+        env:
+          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+          OCTOPUS_SPACE: 'SecondSwap'
+        with:
+          packages: |
+            '${{ inputs.app-name }}:${{ github.ref_name }}'
+          version: '${{ github.ref_name }}'
 
       - name: Create release
         uses: OctopusDeploy/create-release-action@v3
@@ -82,13 +93,4 @@ jobs:
           channel: 'Default'
           packages: '${{ inputs.app-name }}:${{ github.ref_name }}'
           release_number: '${{ github.ref_name }}'
-      - name: Push build information to Octopus Deploy 🐙
-        uses: OctopusDeploy/push-build-information-action@v3
-        env:
-          OCTOPUS_URL: https://emurgo.octopus.app
-          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SPACE: 'SecondSwap'
-        with:
-          packages: '${{ inputs.app-name }}:${{ github.ref_name }}'
-          version: '${{ github.ref_name }}'
 
