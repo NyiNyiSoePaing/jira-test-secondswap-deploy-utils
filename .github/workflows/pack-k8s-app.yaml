@@ -35,9 +35,9 @@ jobs:
       - name: Checkout secondswap-deploy-utils
         uses: actions/checkout@v3
         with:
-          repository: NyiNyiSoePaing/test-jira-deploy-utils
+          repository: NyiNyiSoePaing/jira-test-secondswap-deploy-utils
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: test-jira-deploy-utils
+          path: jira-test-secondswap-deploy-utils
           ref: main
 
       # - name: Use Node.js ${{ matrix.node-version }}
