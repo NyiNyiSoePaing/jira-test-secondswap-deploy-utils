@@ -35,58 +35,114 @@ jobs:
       - name: Checkout secondswap-deploy-utils
         uses: actions/checkout@v3
         with:
-          repository: secondswap/secondswap-deploy-utils
+          repository: NyiNyiSoePaing/test-jira-deploy-utils
           token: ${{ secrets.GH_ACCESS_TOKEN }}
-          path: secondswap-deploy-utils
+          path: test-jira-deploy-utils
           ref: main
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node-version }}
+      # - name: Use Node.js ${{ matrix.node-version }}
+      #   uses: actions/setup-node@v2
+      #   with:
+      #     node-version: ${{ matrix.node-version }}
 
-      - name: Set package name 📦
-        run: echo "PACKAGE_NAME=$(echo ${{ inputs.app-name }}.${{ github.ref_name }}.zip)" >> $GITHUB_ENV
+      # - name: Set package name 📦
+      #   run: echo "PACKAGE_NAME=$(echo ${{ inputs.app-name }}.${{ github.ref_name }}.zip)" >> $GITHUB_ENV
 
-      - name: Copy k8s dir
-        run: cp -r _k8s/ __k8s__/
+      # - name: Copy k8s dir
+      #   run: cp -r _k8s/ __k8s__/
 
-      - name: Replace values
-        run: node ${{ github.workspace }}/secondswap-deploy-utils/set-custom-vars.cjs ${{ inputs.app-name }} ${{ github.ref_name }} ${{ github.workspace }}
+      # - name: Replace values
+      #   run: node ${{ github.workspace }}/secondswap-deploy-utils/set-custom-vars.cjs ${{ inputs.app-name }} ${{ github.ref_name }} ${{ github.workspace }}
 
-      - name: Zip package 📦
-        run: cd ./__k8s__/${{ inputs.app-name }} && zip -r ../../$(echo $PACKAGE_NAME) .
+      # - name: Zip package 📦
+      #   run: cd ./__k8s__/${{ inputs.app-name }} && zip -r ../../$(echo $PACKAGE_NAME) .
 
       - name: Install Octopus CLI 🐙
         uses: OctopusDeploy/install-octopus-cli-action@v3
         with:
           version: latest
 
+      # - name: Push package to Octopus Deploy 🐙
+      #   uses: OctopusDeploy/push-package-action@v3
+      #   env:
+      #     OCTOPUS_URL: https://emurgo-9d8c6a.octopus.app
+      #     OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
+      #     OCTOPUS_SPACE: 'hello-world'
+      #   with:
+      #     packages: '${{ env.PACKAGE_NAME }}'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+
+      - name: Build Helm chart
+        run: |
+          BUILD_VERSION="${GITHUB_REF#refs/tags/}"
+          echo "Build Version: $BUILD_VERSION"        
+          echo "TAG_NAME=$BUILD_VERSION" >> $GITHUB_ENV
+
+          helm dependency update ./hello-world
+          helm package ./hello-world --version $TAG_NAME --app-version $TAG_NAME
+          ls -la
+
       - name: Push package to Octopus Deploy 🐙
         uses: OctopusDeploy/push-package-action@v3
-        env:
-          OCTOPUS_URL: https://emurgo.octopus.app
-          OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SPACE: 'SecondSwap'
         with:
-          packages: '${{ env.PACKAGE_NAME }}'
-          
-      - name: Push build information to Octopus Deploy 🐙
-        uses: OctopusDeploy/push-build-information-action@v3
+          packages: './hello-world-*.tgz'
         env:
-          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_URL: ${{ secrets.OCTOPUS_SERVER }}
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SPACE: 'SecondSwap'
-        with:
-          packages: '${{ inputs.app-name }}'
-          version: '${{ github.ref_name }}'
+          OCTOPUS_SPACE: 'Default'
+
+
+###############################
+
+      - name: Install Octopus CLI
+        run: |
+          curl -L https://github.com/OctopusDeploy/cli/raw/main/scripts/install.sh | bash
+          octopus --version
+
+      - name: Create buildinfo.json for Octopus
+        run: |
+          COMMIT_ID=$(git rev-parse HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=%B | head -1 | sed 's/"/\\"/g')
+          COMMIT_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/$COMMIT_ID
+          cat <<EOF > buildinfo.json
+          {
+            "BuildEnvironment": "GitHub Actions",
+            "BuildUrl": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+            "Branch": "${GITHUB_REF#refs/heads/}",
+            "BuildNumber": "${GITHUB_RUN_NUMBER}",
+            "VcsType": "Git",
+            "VcsRoot": "https://github.com/${GITHUB_REPOSITORY}",
+            "VcsCommitNumber": "$COMMIT_ID",
+            "Commits": [
+              {
+                "Id": "$COMMIT_ID",
+                "Comment": "$COMMIT_MSG",
+                "LinkUrl": "$COMMIT_URL"
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload build information to Octopus
+        run: |
+          export OCTOPUS_URL=${{ secrets.OCTOPUS_SERVER }}
+          export OCTOPUS_API_KEY=${{ secrets.OCTOPUS_API_KEY }}
+          BUILD_VERSION="${GITHUB_REF#refs/tags/}"
+          echo "version is $BUILD_VERSION"
+          cat buildinfo.json
+          echo "Uploading build info for $BUILD_VERSION"
+          cat buildinfo.json
+          octopus build-information upload --package-id "hello-world"  --version $BUILD_VERSION --file buildinfo.json --overwrite-mode overwrite  --space SecondSwap
+
 
       - name: Create release
         uses: OctopusDeploy/create-release-action@v3
         env:
-          OCTOPUS_URL: https://emurgo.octopus.app
+          OCTOPUS_URL: ${{ secrets.OCTOPUS_SERVER }}
           OCTOPUS_API_KEY: ${{ secrets.OCTOPUS_API_KEY }}
-          OCTOPUS_SPACE: 'SecondSwap'
+          OCTOPUS_SPACE: 'Default'
         with:
           project: ${{ inputs.octopus-project }}
           channel: 'Default'
