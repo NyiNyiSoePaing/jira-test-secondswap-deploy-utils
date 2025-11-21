@@ -17,6 +17,7 @@ on:
         required: true
       GH_ACCESS_TOKEN:
         required: true
+        
 
 jobs:
   pack-k8s-app:
