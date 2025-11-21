@@ -141,7 +141,7 @@ jobs:
           cat buildinfo.json
           echo "Uploading build info for $BUILD_VERSION"
           cat buildinfo.json
-          octopus build-information upload --package-id "hello-world"  --version $BUILD_VERSION --file buildinfo.json --overwrite-mode overwrite  --space SecondSwap
+          octopus build-information upload --package-id "hello-world"  --version $BUILD_VERSION --file buildinfo.json --overwrite-mode overwrite  --space Default
 
 
       - name: Create release
