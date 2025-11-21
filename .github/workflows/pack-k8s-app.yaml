@@ -103,10 +103,10 @@ jobs:
 
 ###############################
 
-      - name: Install Octopus CLI
-        run: |
-          curl -L https://github.com/OctopusDeploy/cli/raw/main/scripts/install.sh | bash
-          octopus --version
+      # - name: Install Octopus CLI
+      #   run: |
+      #     curl -L https://github.com/OctopusDeploy/cli/raw/main/scripts/install.sh | bash
+      #     octopus --version
 
       - name: Create buildinfo.json for Octopus
         run: |
