@@ -76,13 +76,16 @@ jobs:
 
       - name: Build Helm chart
         run: |
+
+          ls -la
+
           BUILD_VERSION="${GITHUB_REF#refs/tags/}"
           echo "Build Version: $BUILD_VERSION"        
-          echo "TAG_NAME=$BUILD_VERSION" >> $GITHUB_ENV
+          # echo "TAG_NAME=$BUILD_VERSION" >> $GITHUB_ENV
 
           helm dependency update ./_k8s/hello-world
-          helm package ./_k8s/hello-world --version $TAG_NAME --app-version $TAG_NAME
-          ls -la
+          helm package ./_k8s/hello-world --version $BUILD_VERSION --app-version $TAG_NAME
+
 
       - name: Push package to Octopus Deploy 🐙
         uses: OctopusDeploy/push-package-action@v3
